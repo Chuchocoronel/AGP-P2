@@ -727,6 +727,8 @@ void Render(App* app)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glEnable(GL_DEPTH_TEST);
 
+            /// ENTITIES /////////////////////////////////////////////////
+
             Program& texturedMeshProgram = app->programs[app->texturedMeshProgramIdx];
             glUseProgram(texturedMeshProgram.handle);
 
@@ -757,6 +759,51 @@ void Render(App* app)
                     glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
                 }
             }
+
+            /// LIGHTS /////////////////////////////////////////////////
+
+            glEnable(GL_DEPTH_TEST);
+            Program& texturedLightProgram = app->programs[app->texturedGeometryProgramIdx4];
+            glUseProgram(texturedLightProgram.handle);
+
+            for (std::vector<Light>::iterator it = app->lights.begin(); it < app->lights.end(); ++it)
+            {
+                Model& model = app->models[app->directionalLightModel];
+
+                if ((*it).type == LightType_Directional)
+                    model = app->models[app->directionalLightModel];
+                if ((*it).type == LightType_Point)
+                    model = app->models[app->pointLightModel];
+
+                Mesh& mesh = app->meshes[model.meshIdx];
+
+                for (u32 i = 0; i < mesh.submeshes.size(); ++i)
+                {
+                    GLuint vao = FindVAO(mesh, i, texturedLightProgram);
+
+                    //This is hardcoded because i don't know why the vao goes default to vao of model pointLight indeferent to what model is.
+                    if ((*it).type == LightType_Directional)
+                        vao = 21;
+                    if ((*it).type == LightType_Point)
+                        vao = 22;
+
+                    glBindVertexArray(vao);
+
+                    //u32 submeshMaterialIdx = model.materialIdx[i];
+                    //Material& submeshMaterial = app->materials[submeshMaterialIdx];
+
+                    glActiveTexture(GL_TEXTURE0);
+                    //glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.albedoTextureIdx].handle);
+                    glUniform3fv(glGetUniformLocation(texturedLightProgram.handle, "lightColor"), 1, glm::value_ptr((*it).color));
+                    glUniformMatrix4fv(glGetUniformLocation(texturedLightProgram.handle, "model"), 1, GL_FALSE, glm::value_ptr(glm::translate(glm::mat4(1), (*it).position)));
+                    glUniformMatrix4fv(glGetUniformLocation(texturedLightProgram.handle, "view"), 1, GL_FALSE, &app->cam.GetViewMatrix()[0][0]);
+                    glUniformMatrix4fv(glGetUniformLocation(texturedLightProgram.handle, "proj"), 1, GL_FALSE, &app->cam.GetProjectionMatrix()[0][0]);
+
+                    Submesh& submesh = mesh.submeshes[i];
+                    glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
+                }
+            }
+        
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             #pragma endregion
@@ -844,49 +891,6 @@ void Render(App* app)
 
             glBindVertexArray(0);
             glUseProgram(0);
-
-            /// LIGHTS /////////////////////////////////////////////////
-            glEnable(GL_DEPTH_TEST);
-            Program& texturedLightProgram = app->programs[app->texturedGeometryProgramIdx4];
-            glUseProgram(texturedLightProgram.handle);
-
-            for (std::vector<Light>::iterator it = app->lights.begin(); it < app->lights.end(); ++it)
-            {
-                Model& model = app->models[app->directionalLightModel];
-
-                if ((*it).type == LightType_Directional)
-                    model = app->models[app->directionalLightModel];
-                if((*it).type == LightType_Point)
-                    model = app->models[app->pointLightModel];
-
-                Mesh& mesh = app->meshes[model.meshIdx];
-
-                for (u32 i = 0; i < mesh.submeshes.size(); ++i)
-                {
-                    GLuint vao = FindVAO(mesh, i, texturedLightProgram);
-
-                    //This is hardcoded because i don't know why the vao goes default to vao of model pointLight indeferent to what model is.
-                    if ((*it).type == LightType_Directional)
-                        vao = 21;
-                    if ((*it).type == LightType_Point)
-                        vao = 22;
-
-                    glBindVertexArray(vao);
-
-                    //u32 submeshMaterialIdx = model.materialIdx[i];
-                    //Material& submeshMaterial = app->materials[submeshMaterialIdx];
-
-                    glActiveTexture(GL_TEXTURE0);
-                    //glBindTexture(GL_TEXTURE_2D, app->textures[submeshMaterial.albedoTextureIdx].handle);
-                    glUniform3fv(glGetUniformLocation(texturedLightProgram.handle, "lightColor"), 1, glm::value_ptr((*it).color));
-                    glUniformMatrix4fv(glGetUniformLocation(texturedLightProgram.handle, "model"), 1, GL_FALSE, glm::value_ptr(glm::translate(glm::mat4(1), (*it).position)));
-                    glUniformMatrix4fv(glGetUniformLocation(texturedLightProgram.handle, "view"), 1, GL_FALSE, &app->cam.GetViewMatrix()[0][0]);
-                    glUniformMatrix4fv(glGetUniformLocation(texturedLightProgram.handle, "proj"), 1, GL_FALSE, &app->cam.GetProjectionMatrix()[0][0]);
-
-                    Submesh& submesh = mesh.submeshes[i];
-                    glDrawElements(GL_TRIANGLES, submesh.indices.size(), GL_UNSIGNED_INT, (void*)(u64)submesh.indexOffset);
-                }
-            }
         }
         break;
         default:;
