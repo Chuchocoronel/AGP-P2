@@ -123,6 +123,31 @@ public:
             Zoom = 45.0f;
     }
 
+    glm::vec3 rotateVector(const glm::vec3 axis, double angle, const glm::vec3 vector) {
+        double radianAngle = angle * PI / 180.0;
+
+        double cosAngle = cos(radianAngle);
+        double sinAngle = sin(radianAngle);
+
+        glm::vec3 rotatedVector;
+        rotatedVector.x =
+            (cosAngle + (1 - cosAngle) * axis.x * axis.x) * vector.x +
+            ((1 - cosAngle) * axis.x * axis.y - sinAngle * axis.z) * vector.y +
+            ((1 - cosAngle) * axis.x * axis.z + sinAngle * axis.y) * vector.z;
+
+        rotatedVector.y =
+            ((1 - cosAngle) * axis.y * axis.x + sinAngle * axis.z) * vector.x +
+            (cosAngle + (1 - cosAngle) * axis.y * axis.y) * vector.y +
+            ((1 - cosAngle) * axis.y * axis.z - sinAngle * axis.x) * vector.z;
+
+        rotatedVector.z =
+            ((1 - cosAngle) * axis.z * axis.x - sinAngle * axis.y) * vector.x +
+            ((1 - cosAngle) * axis.z * axis.y + sinAngle * axis.x) * vector.y +
+            (cosAngle + (1 - cosAngle) * axis.z * axis.z) * vector.z;
+
+        return rotatedVector;
+    }
+
 private:
     // calculates the front vector from the Camera's (updated) Euler Angles
     void updateCameraVectors()

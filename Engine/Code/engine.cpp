@@ -625,6 +625,22 @@ void Update(App* app)
         app->cam.ProcessMouseMovement(app->input.mouseDelta.x, -app->input.mouseDelta.y);
     }
 
+    if (app->input.mouseButtons[RIGHT] == BUTTON_PRESSED)
+    {
+        vec3 reference = { 0,0,0 };
+
+        vec3 dir = app->cam.Position - reference;
+
+        dir = app->cam.rotateVector(app->cam.Up, AI_DEG_TO_RAD(app->input.mouseDelta.x * 10), dir);
+        dir = app->cam.rotateVector(app->cam.Right, AI_DEG_TO_RAD(app->input.mouseDelta.y * 10), dir);
+
+        app->cam.Position = dir + reference;
+
+        vec3 direction = reference - app->cam.Position;
+
+        app->cam.Front = direction;
+    }
+
     /*glBindBuffer(GL_UNIFORM_BUFFER, app->buffer.handle);
     app->buffer.data = (u8*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
     app->buffer.head = 0;*/
